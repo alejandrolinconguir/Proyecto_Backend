@@ -1,49 +1,52 @@
 from dataclasses import dataclass
 
+# Estados válidos para un videojuego, según el MER del equipo.
+ESTADOS_VIDEOJUEGO = {"Disponible", "Arrendado", "Dañado"}
+
 
 @dataclass
 class Videojuego:
     """
-    Entidad de dominio Videojuego.
+    Entidad de dominio Videojuego (alineada al MER de RetroGames).
 
-    Representa un videojuego dentro del sistema RetroGames, independiente
-    de cómo se reciba o entregue por la API (eso lo maneja schemas/).
+    Representa un videojuego dentro del sistema, independiente de cómo se
+    reciba o entregue por la API (eso lo maneja schemas/).
 
-    Relación: cada Videojuego pertenece a una Categoria (categoria_id).
+    Relación: cada Videojuego pertenece a una Categoria (id_categoria).
     """
-    id: int
+    id_videojuego: int
     titulo: str
-    categoria_id: int
     plataforma: str
-    precio_arriendo_diario: float
-    stock_total: int
-    stock_disponible: int
-    activo: bool = True
+    año_lanzamiento: int
+    id_categoria: int
+    estado: str = "Disponible"
 
     def __post_init__(self):
-        # Reglas de coherencia del propio dominio (no reglas de negocio del
-        # caso de uso, sino invariantes que la entidad SIEMPRE debe cumplir).
-        if self.stock_disponible > self.stock_total:
+        # Reglas de coherencia del propio dominio: invariantes que la
+        # entidad SIEMPRE debe cumplir, sin importar quién la cree.
+        if self.estado not in ESTADOS_VIDEOJUEGO:
             raise ValueError(
-                "stock_disponible no puede ser mayor que stock_total"
+                f"Estado inválido. Debe ser uno de: {', '.join(sorted(ESTADOS_VIDEOJUEGO))}"
             )
-        if self.stock_total < 0 or self.stock_disponible < 0:
-            raise ValueError("El stock no puede ser negativo")
-        if self.precio_arriendo_diario <= 0:
-            raise ValueError("precio_arriendo_diario debe ser mayor a 0")
+        if not self.titulo.strip():
+            raise ValueError("El título no puede estar vacío")
 
     def esta_disponible(self) -> bool:
-        """Un videojuego está disponible para arriendo si está activo y tiene stock."""
-        return self.activo and self.stock_disponible > 0
+        """Un videojuego solo puede arrendarse si su estado es 'Disponible'."""
+        return self.estado == "Disponible"
 
-    def reservar_unidad(self) -> None:
-        """Descuenta una unidad del stock disponible al concretar un arriendo."""
-        if self.stock_disponible <= 0:
-            raise ValueError("No hay stock disponible para reservar")
-        self.stock_disponible -= 1
+    def marcar_arrendado(self) -> None:
+        """Cambia el estado al concretar un arriendo (regla de negocio 1 del MER)."""
+        if not self.esta_disponible():
+            raise ValueError(
+                f"No se puede arrendar: el videojuego está '{self.estado}'"
+            )
+        self.estado = "Arrendado"
 
-    def liberar_unidad(self) -> None:
-        """Devuelve una unidad al stock disponible al finalizar un arriendo."""
-        if self.stock_disponible >= self.stock_total:
-            raise ValueError("El stock disponible no puede superar el stock total")
-        self.stock_disponible += 1
+    def marcar_disponible(self) -> None:
+        """Cambia el estado al devolver un videojuego arrendado."""
+        self.estado = "Disponible"
+
+    def marcar_dañado(self) -> None:
+        """Cambia el estado si el videojuego se reporta dañado al devolverlo."""
+        self.estado = "Dañado"
