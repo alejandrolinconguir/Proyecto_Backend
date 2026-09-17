@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import videojuegos
+from app.routers import videojuegos, categoria
 
 app = FastAPI(
     title="RetroGames API",
@@ -7,6 +7,7 @@ app = FastAPI(
     version="1.0.0"
 )
 app.include_router(videojuegos.router) 
+app.include_router(categoria.router)
 #FastAPI, incorpora los endpoints que están definidos en videojuegos.py
 
 
