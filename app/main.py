@@ -1,11 +1,18 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from app.routers import videojuegos, categoria
+from app.routers import videojuegos, categoria, arriendos
 from app.services.videojuego_service import (VideojuegoNoEncontradoError,
     CategoriaNoEncontradaError as CategoriaVideojuegoNoEncontradaError)
 from app.services.categoria_service import (CategoriaNoEncontradaError as CategoriaServiceNoEncontradaError,
     CategoriaYaExisteError)
 from fastapi.exceptions import RequestValidationError
+from app.services.arriendo_service import (
+    ArriendoNoEncontradoError,
+    VideojuegoNoDisponibleError,
+    ClienteTieneArriendoActivoError,
+    FechaDevolucionInvalidaError,
+    VideojuegoNoEncontradoEnArriendoError,
+)
 
 app = FastAPI(
     title="RetroGames API",
@@ -83,6 +90,52 @@ async def categoria_ya_existe_handler(
         }
     )
 
+@app.exception_handler(FechaDevolucionInvalidaError)
+async def fecha_devolucion_invalida_handler(
+    request: Request, exc: FechaDevolucionInvalidaError
+):
+    return JSONResponse(
+        status_code=422,
+        content={"error": {"code": "INVALID_RETURN_DATE", "message": str(exc), "details": []}}
+    )
+
+
+@app.exception_handler(ArriendoNoEncontradoError)
+async def arriendo_no_encontrado_handler(request: Request, exc: ArriendoNoEncontradoError):
+    return JSONResponse(
+        status_code=404,
+        content={"error": {"code": "ARRIENDO_NOT_FOUND", "message": str(exc), "details": []}}
+    )
+
+
+@app.exception_handler(VideojuegoNoEncontradoEnArriendoError)
+async def videojuego_no_encontrado_en_arriendo_handler(
+    request: Request, exc: VideojuegoNoEncontradoEnArriendoError
+):
+    return JSONResponse(
+        status_code=404,
+        content={"error": {"code": "VIDEOJUEGO_NOT_FOUND", "message": str(exc), "details": []}}
+    )
+
+
+@app.exception_handler(VideojuegoNoDisponibleError)
+async def videojuego_no_disponible_handler(request: Request, exc: VideojuegoNoDisponibleError):
+    return JSONResponse(
+        status_code=409,
+        content={"error": {"code": "VIDEOJUEGO_NOT_AVAILABLE", "message": str(exc), "details": []}}
+    )
+
+
+@app.exception_handler(ClienteTieneArriendoActivoError)
+async def cliente_tiene_arriendo_activo_handler(
+    request: Request, exc: ClienteTieneArriendoActivoError
+):
+    return JSONResponse(
+        status_code=409,
+        content={"error": {"code": "CLIENTE_HAS_ACTIVE_RENTAL", "message": str(exc), "details": []}}
+    )
+
+
 @app.exception_handler(RequestValidationError)
 async def validacion_handler(request: Request, exc: RequestValidationError):
     detalles = []
@@ -106,6 +159,7 @@ async def validacion_handler(request: Request, exc: RequestValidationError):
 
 app.include_router(videojuegos.router) 
 app.include_router(categoria.router)
+app.include_router(arriendos.router)
 #FastAPI, incorpora los endpoints que están definidos en videojuegos.py
 
 
