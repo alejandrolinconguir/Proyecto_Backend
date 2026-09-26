@@ -3,27 +3,15 @@ from app.repositories import videojuego_repository
 from app.repositories.arriendo_repository import arriendo_repository
 from app.repositories.cliente_repository import obtener_por_id
 from app.schemas.arriendo import ArriendoUpdate
-from app.core.errors import ClienteNoEncontradoError
-
-class ArriendoNoEncontradoError(Exception):
-    pass
-
-
-class VideojuegoNoDisponibleError(Exception):
-    pass
-
-
-class ClienteTieneArriendoActivoError(Exception):
-    pass
-
-
-class FechaDevolucionInvalidaError(Exception):
-    pass
-
-
-class VideojuegoNoEncontradoEnArriendoError(Exception):
-    pass
-
+from app.core.errors import (
+    ClienteNoEncontradoError,
+    ArriendoNoEncontradoError,
+    VideojuegoNoDisponibleError,
+    ClienteTieneArriendoActivoError,
+    FechaDevolucionInvalidaError,
+    VideojuegoNoEncontradoEnArriendoError,
+    SolicitudInvalidaError,
+)
 
 class ArriendoService:
     """Lógica de negocio de los arriendos."""
@@ -116,7 +104,7 @@ class ArriendoService:
         # No permitimos reabrir un arriendo ya devuelto, porque eso dejaría
         # el estado del videojuego inconsistente con el historial.
         elif nuevo_estado == "Activo" and arriendo.estado == "Devuelto":
-            raise ValueError("No se puede reactivar un arriendo ya devuelto")
+            raise SolicitudInvalidaError("No se puede reactivar un arriendo ya devuelto")
         else:
             arriendo.fecha_devolucion = nueva_fecha_devolucion
 

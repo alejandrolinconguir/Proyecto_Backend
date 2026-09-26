@@ -1,11 +1,11 @@
 from app.domain.videojuego import Videojuego
 from app.repositories import videojuego_repository
 from app.repositories.categoria_repository import categoria_repository
-
-class VideojuegoNoEncontradoError(Exception):
-    pass
-class CategoriaNoEncontradaError(Exception):
-    pass
+from app.core.errors import (
+    VideojuegoNoEncontradoError,
+    CategoriaNoEncontradaError,
+    SolicitudInvalidaError,
+)
 
 def obtener_videojuegos(          #las 3 funciones del GET
     id_categoria=None,
@@ -54,10 +54,9 @@ def obtener_videojuegos(          #las 3 funciones del GET
         campo = orden[1:] if orden_descendente else orden
 
         if campo not in campos_orden:
-            raise ValueError(
-                "Orden inválido. Opciones: titulo, plataforma, "
-                "año_lanzamiento, id_categoria, estado"
-            )
+            raise SolicitudInvalidaError(
+        "Orden inválido. Opciones: titulo, plataforma, "
+        "año_lanzamiento, id_categoria, estado")
 
         videojuegos = sorted(
             videojuegos,

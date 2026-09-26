@@ -1,28 +1,15 @@
 from typing import Optional
+
 from app.domain.categoria import Categoria
 from app.schemas.categoria import CategoriaCreate, CategoriaUpdate
 from app.repositories.categoria_repository import categoria_repository
-
-
-class CategoriaYaExisteError(Exception):
-    """Se lanza cuando se intenta crear/renombrar una categoría con un
-    nombre que ya existe (regla de negocio: evitar categorías duplicadas)."""
-    pass
-
-
-class CategoriaNoEncontradaError(Exception):
-    """Se lanza cuando se busca/actualiza/elimina una categoría que no existe."""
-    pass
-
-
-class ParametroInvalidoError(Exception):
-    """Se lanza cuando los parámetros de filtrado/orden/paginación son inválidos."""
-    pass
-
+from app.core.errors import (
+    CategoriaYaExisteError,
+    CategoriaNoEncontradaError,
+    ParametroInvalidoError,
+)
 
 CAMPOS_ORDENABLES = {"id_categoria", "nombre", "edad_minima", "estado"}
-
-
 class CategoriaService:
 
     def crear_categoria(self, datos: CategoriaCreate) -> Categoria:
