@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from app.routers import videojuegos, categoria, arriendos
+from app.routers import videojuegos, categoria, arriendos, clientes
+from app.core.error_handlers import registrar_manejadores_errores
 from app.services.videojuego_service import (VideojuegoNoEncontradoError,
     CategoriaNoEncontradaError as CategoriaVideojuegoNoEncontradaError)
 from app.services.categoria_service import (CategoriaNoEncontradaError as CategoriaServiceNoEncontradaError,
@@ -19,7 +20,7 @@ app = FastAPI(
     description="API para la gestión de videojuegos, clientes, categorías y arriendos.",
     version="1.0.0"
 )
-
+registrar_manejadores_errores(app)
 # Maneja los errores cuando no existe un videojuego solicitado
 @app.exception_handler(VideojuegoNoEncontradoError)
 async def videojuego_no_encontrado_handler(
@@ -160,6 +161,7 @@ async def validacion_handler(request: Request, exc: RequestValidationError):
 app.include_router(videojuegos.router) 
 app.include_router(categoria.router)
 app.include_router(arriendos.router)
+app.include_router(clientes.router)
 #FastAPI, incorpora los endpoints que están definidos en videojuegos.py
 
 

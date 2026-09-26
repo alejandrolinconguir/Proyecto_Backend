@@ -1,8 +1,9 @@
 from app.domain.arriendo import Arriendo
 from app.repositories import videojuego_repository
 from app.repositories.arriendo_repository import arriendo_repository
+from app.repositories.cliente_repository import obtener_por_id
 from app.schemas.arriendo import ArriendoUpdate
-
+from app.core.errors import ClienteNoEncontradoError
 
 class ArriendoNoEncontradoError(Exception):
     pass
@@ -45,7 +46,12 @@ class ArriendoService:
             raise VideojuegoNoEncontradoEnArriendoError(
                 "No existe un videojuego con el ID indicado"
             )
+        # Relación: el cliente debe existir.
+        cliente = obtener_por_id(datos.id_cliente)
+        if cliente is None:
+            raise ClienteNoEncontradoError(datos.id_cliente)
 
+        
         # REGLA 1: solo se puede arrendar un videojuego disponible.
         if not videojuego.esta_disponible():
             raise VideojuegoNoDisponibleError(
