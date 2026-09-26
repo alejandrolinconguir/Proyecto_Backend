@@ -1,13 +1,45 @@
-from fastapi import APIRouter
-from app.schemas.categoria import (CategoriaCreate,CategoriaUpdate,CategoriaResponse)
-from app.services.categoria_service import categoria_service
+from typing import Optional
+from fastapi import APIRouter, HTTPException
+from app.schemas.categoria import (
+    CategoriaCreate,
+    CategoriaUpdate,
+    CategoriaResponse
+)
+from app.services.categoria_service import (
+    categoria_service,
+    ParametroInvalidoError,
+)
 
 
-router = APIRouter(prefix="/categorias",tags=["Categorias"])
+router = APIRouter(
+    prefix="/categorias",
+    tags=["Categorias"]
+)
 
-@router.get("/", response_model=list[CategoriaResponse])
-def obtener_categorias():
-    return categoria_service.listar_categorias()
+
+@router.get("/")
+def obtener_categorias(
+    estado: Optional[str] = None,
+    ordenar_por: str = "id_categoria",
+    direccion: str = "asc",
+    pagina: int = 1,
+    limite: int = 20,
+):
+    """
+    Lista categorías con filtrado, ordenamiento y paginación.
+
+    Ejemplo: GET /categorias/?estado=Activa&ordenar_por=nombre&direccion=asc&pagina=1&limite=10
+    """
+    try:
+        return categoria_service.listar_categorias_paginadas(
+            estado=estado,
+            ordenar_por=ordenar_por,
+            direccion=direccion,
+            pagina=pagina,
+            limite=limite,
+        )
+    except ParametroInvalidoError as error:
+        raise HTTPException(status_code=400, detail=str(error))
 
 
 @router.get("/{id_categoria}", response_model=CategoriaResponse)
