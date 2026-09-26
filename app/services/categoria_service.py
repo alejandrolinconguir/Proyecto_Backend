@@ -89,9 +89,7 @@ class CategoriaService:
     def obtener_categoria(self, id_categoria: int) -> Categoria:
         categoria = categoria_repository.buscar_por_id(id_categoria)
         if categoria is None:
-            raise CategoriaNoEncontradaError(
-                f"No existe una categoría con id {id_categoria}"
-            )
+            raise CategoriaNoEncontradaError(f"No existe una categoría con id {id_categoria}")
         return categoria
 
     def actualizar_categoria(self, id_categoria: int, datos: CategoriaUpdate) -> Categoria:

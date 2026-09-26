@@ -31,6 +31,7 @@ class VideojuegoBase(BaseModel):
         description="ID de la categoría a la que pertenece (relación)",
     )
 
+
     @field_validator("plataforma")
     @classmethod
     def validar_plataforma(cls, valor: str) -> str:
@@ -127,3 +128,11 @@ class VideojuegoResponse(VideojuegoBase):
     model_config = {
         "from_attributes": True  # permite construirlo directo desde el objeto de domain/
     }
+#esto solo definira como se nos devolveran los datos despues
+class VideojuegoPaginadoResponse(BaseModel):
+    items: list[VideojuegoResponse]
+    total: int
+    pagina: int
+    limite: int
+    total_paginas: int
+
