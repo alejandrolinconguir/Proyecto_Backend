@@ -30,31 +30,27 @@ DATABASE_URL = URL.create(
     drivername="postgresql+psycopg",
     username=os.environ["POSTGRES_USER"],
     password=os.environ["POSTGRES_PASSWORD"],
-    host=os.getenv("POSTGRES_HOST", "localhost"),
+    host=os.getenv("POSTGRES_HOST", "127.0.0.1"),
     port=int(os.getenv("POSTGRES_PORT", "5433")),
     database=os.environ["POSTGRES_DB"],
 )
 
 
-# Administra las conexiones con la base de datos.
+# Administra las conexiones y limita la espera al conectarse.
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
+    connect_args={"connect_timeout": 5},
 )
 
 
-# Crea sesiones para consultar y modificar los datos.
+# Crea sesiones usando el mismo motor de conexión.
 SessionLocal = sessionmaker(
     bind=engine,
     autoflush=False,
     expire_on_commit=False,
 )
 
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-    connect_args={"connect_timeout": 5},
-)
 
 # Los modelos ORM heredarán de esta clase.
 class Base(DeclarativeBase):
@@ -68,5 +64,3 @@ def get_db():
         yield db
     finally:
         db.close()
-
-        
