@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.errors import AppError
@@ -26,6 +27,19 @@ def registrar_manejadores_errores(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content=_formato_error(exc.code, exc.message, exc.details),
+        )
+
+    @app.exception_handler(IntegrityError)
+    async def manejar_error_integridad(request: Request, exc: IntegrityError):
+        # 409: la base de datos rechazó la operación (valor único repetido o
+        # registro con datos relacionados, por ejemplo un cliente con arriendos).
+        return JSONResponse(
+            status_code=409,
+            content=_formato_error(
+                "CONFLICTO_INTEGRIDAD",
+                "La operación entra en conflicto con datos existentes "
+                "(valor duplicado o registros relacionados)",
+            ),
         )
 
     @app.exception_handler(RequestValidationError)
