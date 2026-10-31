@@ -69,3 +69,12 @@ class CategoriaResponse(CategoriaBase):
     model_config = {
         "from_attributes": True
     }
+
+
+class CategoriaPaginadaResponse(BaseModel):
+    """DTO de salida del listado con filtro, orden y paginación."""
+    items: list[CategoriaResponse]
+    total: int
+    pagina: int
+    limite: int
+    total_paginas: int
