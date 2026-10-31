@@ -1,3 +1,5 @@
+from sqlalchemy.orm import Session
+
 from app.domain.arriendo import Arriendo
 from app.repositories import videojuego_repository
 from app.repositories.arriendo_repository import arriendo_repository
@@ -16,30 +18,30 @@ from app.core.errors import (
 class ArriendoService:
     """Lógica de negocio de los arriendos."""
 
-    def listar_arriendos(self) -> list[Arriendo]:
-        return arriendo_repository.listar()
+    def listar_arriendos(self, db: Session) -> list[Arriendo]:
+        return arriendo_repository.listar(db)
 
-    def obtener_arriendo(self, id_arriendo: int) -> Arriendo:
-        arriendo = arriendo_repository.buscar_por_id(id_arriendo)
+    def obtener_arriendo(self, db: Session, id_arriendo: int) -> Arriendo:
+        arriendo = arriendo_repository.buscar_por_id(db, id_arriendo)
         if arriendo is None:
             raise ArriendoNoEncontradoError(
                 "No existe un arriendo con el ID solicitado"
             )
         return arriendo
 
-    def crear_arriendo(self, datos) -> Arriendo:
+    def crear_arriendo(self, db: Session, datos) -> Arriendo:
         # Relación: el videojuego debe existir.
-        videojuego = videojuego_repository.obtener_por_id(datos.id_videojuego)
+        videojuego = videojuego_repository.obtener_por_id(db, datos.id_videojuego)
         if videojuego is None:
             raise VideojuegoNoEncontradoEnArriendoError(
                 "No existe un videojuego con el ID indicado"
             )
         # Relación: el cliente debe existir.
-        cliente = obtener_por_id(datos.id_cliente)
+        cliente = obtener_por_id(db, datos.id_cliente)
         if cliente is None:
             raise ClienteNoEncontradoError(datos.id_cliente)
 
-        
+
         # REGLA 1: solo se puede arrendar un videojuego disponible.
         if not videojuego.esta_disponible():
             raise VideojuegoNoDisponibleError(
@@ -48,7 +50,7 @@ class ArriendoService:
 
         # REGLA 2: un cliente no puede tener dos arriendos activos.
         arriendo_activo = arriendo_repository.buscar_activo_por_cliente(
-            datos.id_cliente
+            db, datos.id_cliente
         )
         if arriendo_activo is not None:
             raise ClienteTieneArriendoActivoError(
@@ -68,14 +70,19 @@ class ArriendoService:
 
         # El cambio de estado del videojuego ocurre solo cuando el arriendo
         # ya pasó todas las validaciones anteriores.
+        # El arriendo y el cambio de estado del videojuego se guardan juntos
+        # (un solo commit): o se guardan los dos o no se guarda ninguno.
         videojuego.marcar_arrendado()
-        return arriendo_repository.crear(nuevo_arriendo)
+        arriendo_creado = arriendo_repository.crear(db, nuevo_arriendo)
+        videojuego_repository.actualizar(db, videojuego)
+        db.commit()
+        return arriendo_creado
 
     def actualizar_arriendo(
-        self, id_arriendo: int, datos: ArriendoUpdate
+        self, db: Session, id_arriendo: int, datos: ArriendoUpdate
     ) -> Arriendo:
-        arriendo = self.obtener_arriendo(id_arriendo)
-        videojuego = videojuego_repository.obtener_por_id(arriendo.id_videojuego)
+        arriendo = self.obtener_arriendo(db, id_arriendo)
+        videojuego = videojuego_repository.obtener_por_id(db, arriendo.id_videojuego)
 
         if videojuego is None:
             raise VideojuegoNoEncontradoEnArriendoError(
@@ -100,6 +107,7 @@ class ArriendoService:
             arriendo.fecha_devolucion = nueva_fecha_devolucion
             arriendo.marcar_devuelto()
             videojuego.marcar_disponible()
+            videojuego_repository.actualizar(db, videojuego)
 
         # No permitimos reabrir un arriendo ya devuelto, porque eso dejaría
         # el estado del videojuego inconsistente con el historial.
@@ -108,19 +116,23 @@ class ArriendoService:
         else:
             arriendo.fecha_devolucion = nueva_fecha_devolucion
 
-        return arriendo_repository.actualizar(arriendo)
+        arriendo_actualizado = arriendo_repository.actualizar(db, arriendo)
+        db.commit()
+        return arriendo_actualizado
 
-    def eliminar_arriendo(self, id_arriendo: int) -> Arriendo:
-        arriendo = self.obtener_arriendo(id_arriendo)
+    def eliminar_arriendo(self, db: Session, id_arriendo: int) -> Arriendo:
+        arriendo = self.obtener_arriendo(db, id_arriendo)
 
         # Si se elimina un arriendo activo, liberamos el videojuego para no
         # dejarlo en estado 'Arrendado' sin un arriendo que lo respalde.
         if arriendo.esta_activo():
-            videojuego = videojuego_repository.obtener_por_id(arriendo.id_videojuego)
+            videojuego = videojuego_repository.obtener_por_id(db, arriendo.id_videojuego)
             if videojuego is not None:
                 videojuego.marcar_disponible()
+                videojuego_repository.actualizar(db, videojuego)
 
-        eliminado = arriendo_repository.eliminar(id_arriendo)
+        eliminado = arriendo_repository.eliminar(db, id_arriendo)
+        db.commit()
         return eliminado
 
 
