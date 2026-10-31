@@ -26,6 +26,7 @@ class ClienteBase(BaseModel):
     )
     correo: str = Field(
         ...,
+        max_length=254,
         description="Correo electrónico del cliente",
     )
     telefono: str = Field(
@@ -71,7 +72,7 @@ class ClienteUpdate(BaseModel):
     """DTO de entrada para actualizar un Cliente (PUT/PATCH)."""
     nombre: Optional[str] = Field(None, min_length=2, max_length=50)
     apellido: Optional[str] = Field(None, min_length=2, max_length=50)
-    correo: Optional[str] = None
+    correo: Optional[str] = Field(None, max_length=254)
     telefono: Optional[str] = None
     estado: Optional[str] = None
 
